@@ -1,13 +1,17 @@
-
-var renderGraph = function(graph, maxBetweeness) {
+var svg
+var renderGraph = function (graph, maxBetweeness) {
     var width = 800, height = 800;
     var force = d3.layout.force()
         .charge(-200).linkDistance(200).size([width, height]);
 
-    var svg = d3.select("#graph").append("svg")
-        .attr("width", "100%").attr("height", "100%")
-        .attr("pointer-events", "all");
-
+    if (!svg) {
+        svg = d3.select("#graph").append("svg")
+            .attr("width", "100%").attr("height", "100%")
+            .attr("pointer-events", "all");
+    }
+    else {
+        d3.selectAll("svg > *").remove();
+    }
 
 
     force.nodes(graph.nodes).links(graph.links).start();
@@ -55,7 +59,7 @@ var renderGraph = function(graph, maxBetweeness) {
     edgelabels.append('textPath')
         .attr('xlink:href', function (d, i) { return '#edgepath' + i })
         .style("pointer-events", "none")
-        .text(function (d, i) { return  d.betweeness });
+        .text(function (d, i) { return Math.round(d.betweeness * 100) / 100 });
 
 
     var node = svg.selectAll(".node")

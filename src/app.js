@@ -1,15 +1,30 @@
 require('file?name=[name].[ext]!../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js');
 var drawing = require('./drawing.js')
-$(function () {
-  shortestPaths();
-      drawGraph();
+
+window.addEventListener('DOMContentLoaded', function () {
+  clearGraph().then(
+    createGraph().then(
+      refresh()
+    )
+  )
 
 
-});
+  document.getElementById("delete").addEventListener('click', deleteEdge)
 
 
-//var neo4j = require('neo4j-driver').v1;
-//var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", "matneomat"));
+}, false);
+
+var sp = []
+var betweeness = {}
+var refresh = function () {
+  return shortestPaths().then(_ => {
+    groupPaths();
+    //print();
+    calculateBetweenes();
+    drawGraph();
+  })
+}
+
 
 var neo4j = window.neo4j.v1;
 var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", "matneomat"));
@@ -27,7 +42,7 @@ function search() {
       session.close();
       return result;
       return result.records.map(record => {
-        console.log(record);
+        //console.log(record);
         return record;
       });
     })
@@ -37,8 +52,7 @@ function search() {
     });
 }
 
-var sp = []
-var betweeness = {}
+
 var shortestPaths = function (queryString) {
   var session = driver.session();
   return session
@@ -46,13 +60,14 @@ var shortestPaths = function (queryString) {
       'MATCH (n1:Loc),(n2:Loc) \
 	WHERE n1<>n2 \
 	MATCH p=allShortestPaths((n1:Loc)-[*]->(n2:Loc)) WITH  p, n1, n2, \
-	reduce(cost=0,x in relationships(p) | cost+x.cost) AS cost, \
 	reduce(s="",x in nodes(p) | s+" "+x.name) AS path, \
 	reduce(s="",x in relationships(p) | s+" "+ id(x)) AS edges  \
-	ORDER BY cost DESC, LENGTH(p) DESC return n1, n2, path, edges, cost'
+	ORDER BY LENGTH(p) DESC return n1, n2, path, edges'
     )
     .then(result => {
       session.close();
+      sp = []
+      betweeness =  {}
       return result.records.map(record => {
         var res = {};
         res.from = (record._fields[0].properties.name);
@@ -60,20 +75,17 @@ var shortestPaths = function (queryString) {
         res.path = {}
         res.path.nodes = (record._fields[2].trim().split(" "))
         res.path.edges = (record._fields[3].trim().split(" "))
-        res.path.cost = (record._fields[4].low)
-        console.log(res)
+        //console.log(res)
+
         sp.push(res)
 
-        res.path.edges.forEach(edge => betweeness[edge]=0)
+        res.path.edges.forEach(edge => betweeness[edge] = 0)
         return record;
       });
 
     })
-    .then(_ => {
-      groupPaths();
-      recalculateWithCosts();
-      print()
-      calculateBetweenes()
+    .then(res => {
+      return res
     })
     .catch(error => {
       session.close();
@@ -86,54 +98,41 @@ var groupPaths = function () {
   sp = _.groupBy(sp, function (b) {
     return b.from + " " + b.to
   });
-  console.log(sp)
 }
 
-var recalculateWithCosts = function () {
-  console.log(sp)
-  console.log("==========")
-  for (var key in sp) {
-    if (sp.hasOwnProperty(key)) {
-      var max = _.max(sp[key].map(o => o.path.cost))
-      sp[key] = _.filter(sp[key], o => o.path.cost == max)
-    }
-  }
-  console.log(sp)
-}
+
 
 var print = function () {
   for (var key in sp) {
     if (sp.hasOwnProperty(key)) {
       console.log(key)
       sp[key].forEach(p => {
-        console.log(p.path.nodes.map(n => n))
+        //console.log(p.path.nodes.map(n => n))
+        console.log(p.path.edges.map(n => n))
       });
     }
   }
 }
 
-var calculateBetweenes = function() {
+var calculateBetweenes = function () {
   for (var key in sp) {
     if (sp.hasOwnProperty(key)) {
       sp[key].forEach(p => {
         p.path.edges.forEach(edge => {
-          console.log(edge)
-          betweeness[edge] += 1/sp[key].length
+          betweeness[edge] += 1 / sp[key].length
+          //console.log(betweeness)
         });
 
       });
     }
   }
-  console.log(betweeness)
-  var a = Object.keys(betweeness).map((key) => {return {key: key, betweeness: betweeness[key]}})
-  var max = _.maxBy(a, o=> o.betweeness)
-  console.log(max) 
+  //console.log(betweeness)
 }
 
-var getMaxBetweeness = function() {
-  var a = Object.keys(betweeness).map((key) => {return {key: key, betweeness: betweeness[key]}})
-  var max = _.maxBy(a, o=> o.betweeness)
-  return max 
+var getMaxBetweeness = function () {
+  var a = Object.keys(betweeness).map((key) => { return { key: key, betweeness: betweeness[key] } })
+  var max = _.maxBy(a, o => o.betweeness)
+  return max
 }
 
 
@@ -148,7 +147,7 @@ var neo4jDataToD3Data = function (data) {
   var links = data.records[0]._fields[0].links
   //console.log(links)
   nodes.forEach(node => {
-    graph.nodes.push({ title: node.properties.name, label: "Loc"})
+    graph.nodes.push({ title: node.properties.name, label: "Loc" })
   })
   links.forEach(link => {
     var start = _.find(nodes, o => o.identity.low == link.source.low)
@@ -200,11 +199,84 @@ function getGraph() {
     });
 }
 
-var drawGraph = function() {
+var drawGraph = function () {
   search()
-      .then(graph => {
-        graph = neo4jDataToD3Data(graph)
-        var maxBetweeness = getMaxBetweeness()
-        drawing.renderGraph(graph, maxBetweeness)
-      })
+    .then(graph => {
+      graph = neo4jDataToD3Data(graph)
+      var maxBetweeness = getMaxBetweeness()
+      drawing.renderGraph(graph, maxBetweeness)
+    })
+}
+
+var deleteEdge = function () {
+  var edgeToDelete = getMaxBetweeness()
+  console.log("Deleteing edge " + edgeToDelete.key)
+  var session = driver.session();
+  return session
+    .run(
+      'match (n:Loc)-[r]-(k:Loc) \
+        where id(r)=' + edgeToDelete.key +
+      ' delete r'
+    )
+    .then(result => {
+      session.close();
+      console.log("Edge deleted: ")
+      console.log(result)
+      refresh()
+      return result;
+    })
+    .catch(error => {
+      session.close();
+      throw error;
+    });
+
+}
+
+var createGraph = function () {
+  var session = driver.session();
+  return session
+    .run(
+      `CREATE (a:Loc{name:'A'}), (b:Loc{name:'B'}), (c:Loc{name:'C'}),
+      (d:Loc{name:'D'}), (e:Loc{name:'E'}), (f:Loc{name:'F'}),
+      (a)-[:ROAD]->(b),
+      (a)-[:ROAD]->(c),
+      (a)-[:ROAD]->(d),
+      (a)-[:ROAD]->(d),
+      (b)-[:ROAD]->(d),
+      (c)-[:ROAD]->(d),
+      (c)-[:ROAD]->(e),
+      (d)-[:ROAD]->(e),
+      (d)-[:ROAD]->(f),
+      (e)-[:ROAD]->(f),
+      (e)-[:ROAD]->(f);`
+    )
+    .then(result => {
+      session.close();
+      //console.log("Graph created: " + result)
+      return result;
+    })
+    .catch(error => {
+      session.close();
+      throw error;
+    });
+
+}
+
+var clearGraph = function () {
+  var session = driver.session();
+  return session
+    .run(
+      `MATCH (n:Loc)
+       OPTIONAL MATCH (n)-[r]-()
+       DELETE n,r`
+    )
+    .then(result => {
+      session.close();
+      //console.log("Graph cleared: " + result)
+      return result;
+    })
+    .catch(error => {
+      session.close();
+      throw error;
+    });
 }
