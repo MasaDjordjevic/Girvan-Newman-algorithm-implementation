@@ -34,9 +34,10 @@ function search() {
   var session = driver.session();
   return session
     .run(
-      'match path=(n:Loc)-[]-(n1:Loc) \
-        unwind nodes(path) as p unwind rels(path) as r \
-        return {nodes: collect(distinct p), links: collect(DISTINCT {source: id(startNode(r)), target: id(endNode(r)), id: id(r)})}'
+      `match path=(n:Loc)-[]-(n1:Loc)
+      match (k:Loc)
+              unwind nodes(path) as p unwind rels(path) as r
+              return {nodes: collect(distinct k), links: collect(DISTINCT {source: id(startNode(r)), target: id(endNode(r)), id: id(r)})}`
     )
     .then(result => {
       session.close();
@@ -169,41 +170,15 @@ var neo4jDataToD3Data = function (data) {
 }
 
 
-function getGraph() {
-  var session = driver.session();
-  return session.run(
-    'MATCH (m:Movie)<-[:ACTED_IN]-(a:Person) \
-    RETURN m.title AS movie, collect(a.name) AS cast \
-    LIMIT {limit}', { limit: 100 })
-    .then(results => {
-      session.close();
-      var nodes = [], rels = [], i = 0;
-      results.records.forEach(res => {
-        nodes.push({ title: res.get('movie'), label: 'movie' });
-        var target = i;
-        i++;
-
-        res.get('cast').forEach(name => {
-          var actor = { title: name, label: 'actor' };
-          var source = _.findIndex(nodes, actor);
-          if (source == -1) {
-            nodes.push(actor);
-            source = i;
-            i++;
-          }
-          rels.push({ source, target })
-        })
-      });
-
-      return { nodes, links: rels };
-    });
-}
-
 var drawGraph = function () {
   search()
     .then(graph => {
       graph = neo4jDataToD3Data(graph)
       var maxBetweeness = getMaxBetweeness()
+      graph.nodes.forEach(n => {
+        n.x = 0
+        n.y = 0
+      })
       drawing.renderGraph(graph, maxBetweeness)
     })
 }

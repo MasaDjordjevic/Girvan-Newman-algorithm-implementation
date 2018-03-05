@@ -1,8 +1,21 @@
 var svg
 var renderGraph = function (graph, maxBetweeness) {
     var width = 800, height = 800;
+
+    graph.nodes.forEach(n => {
+        n.x = width/2   
+        n.y = height/2
+        n.vx = 1
+        n.vy = 0
+      })
+
     var force = d3.layout.force()
-        .charge(-200).linkDistance(200).size([width, height]);
+         .charge(-50)
+         .linkDistance(200)
+         .friction(0.5)
+         .gravity(0.1)
+         .alpha(-0.5)
+        .size([width, height]);
 
     if (!svg) {
         svg = d3.select("#graph").append("svg")
@@ -15,6 +28,8 @@ var renderGraph = function (graph, maxBetweeness) {
 
 
     force.nodes(graph.nodes).links(graph.links).start();
+
+
 
     var link = svg.selectAll(".link")
         .data(graph.links)
@@ -69,6 +84,8 @@ var renderGraph = function (graph, maxBetweeness) {
     var node = svg.selectAll(".node")
         .data(graph.nodes).enter()
         .append("circle")
+        .attr("fill", "green")
+        .attr("stroke", "green")
         .attr("class", d => {
             return "node " + d.label
         })
@@ -109,9 +126,13 @@ var renderGraph = function (graph, maxBetweeness) {
         });
 
         node.attr({
+            "x": function (d) { return width*2; },
+            "y": function (d) { return height*2; },
             "cx": function (d) { return d.x; },
             "cy": function (d) { return d.y; }
+
         });
+
 
 
 
