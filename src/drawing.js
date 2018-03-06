@@ -1,6 +1,10 @@
 var svg
 var positions = {}
 
+var colors = {
+    'red': 'darkorange'
+}
+
 var clearGraph = function (graph) {
     if (graph && graph.nodes) {
         graph.nodes.forEach(n => {
@@ -13,30 +17,6 @@ var clearGraph = function (graph) {
 
 var renderGraph = function (graph, maxBetweeness) {
     var width = 800, height = 800; radius = 25;
-
-    // graph.nodes.forEach(n => {
-    //     n.x = width/2   
-    //     n.y = height/2
-    //     n.vx = 1
-    //     n.vy = 0
-    //   })
-
-    // graph.nodes.forEach(n => {
-    //     if (n.mx) {
-    //         n.fixed = true
-    //     } else {
-    //         n.mx = n.cx
-    //         n.my = n.cy
-    //     }
-    // })
-
-    // var force = d3.layout.force()
-    //      .charge(-0.9)
-    //      .linkDistance(200)
-    //      .friction(0.5)
-    //      .gravity(0)
-    //      .alpha(1)
-    //     .size([width, height]);
 
     var color = d3.scale.category20();
 
@@ -56,10 +36,8 @@ var renderGraph = function (graph, maxBetweeness) {
     else {
         d3.selectAll("svg > *").remove();
         graph.nodes.forEach(n => {
-            console.log(positions[n.title])
             n.x = positions[n.title].x
             n.y = positions[n.title].y
-            //n.fixed = true;
         })
     }
 
@@ -73,11 +51,13 @@ var renderGraph = function (graph, maxBetweeness) {
         .enter()
         .append("line")
         .attr("id", function (d, i) { return 'edge' + i })
-        .attr('marker-end', 'url(#arrowhead)')
+        .attr("marker-end", function (d, i) {
+            return 'url(#marker_' + (maxBetweeness && d.id == maxBetweeness.key ? colors.red : 'gray') + ')'
+        })
         .style("stroke-width", '1.5px')
-        .style('stroke', '#ccc')
-
-
+        .style('stroke', function (d, i) {
+            return maxBetweeness && d.id == maxBetweeness.key ? colors.red : '#ccc'
+        })
         .style("pointer-events", "none");
 
     var edgepaths = svg.selectAll(".edgepath")
@@ -90,7 +70,7 @@ var renderGraph = function (graph, maxBetweeness) {
             'fill-opacity': 0,
             'stroke-opacity': 0,
             'fill': 'blue',
-            'stroke': 'red',
+            'stroke': colors.red,
             'id': function (d, i) { return 'edgepath' + i }
         })
         .style("pointer-events", "none");
@@ -106,13 +86,15 @@ var renderGraph = function (graph, maxBetweeness) {
             'dx': 90,
             'dy': 11,
             'font-size': 12,
+            "user-serlect": "none",
             'fill': function (d, i) {
-                return maxBetweeness && d.id == maxBetweeness.key ? 'red' : '#aaa'
+                return maxBetweeness && d.id == maxBetweeness.key ? colors.red : '#aaa'
             }
         });
 
     edgelabels.append('textPath')
         .attr('xlink:href', function (d, i) { return '#edgepath' + i })
+        .attr("user-serlect", "none")
         .style("pointer-events", "none")
         .text(function (d, i) { return Math.round(d.betweeness * 100) / 100 });
 
@@ -142,7 +124,8 @@ var renderGraph = function (graph, maxBetweeness) {
             "y": function (d) { return d.y - 200; },
             "class": "nodelabel",
             "stroke": "white",
-            "fill": "white"
+            "fill": "white",
+            "user-serlect": "none"
         })
         .text(function (d) { return d.title; });
     // html title attribute
@@ -151,9 +134,15 @@ var renderGraph = function (graph, maxBetweeness) {
             return d.title;
         });
 
-    svg.append('defs').append('marker')
+    var arrowColors = [{name: colors.red, color: colors.red }, {name:"gray", color: "#ccc" }]
+    svg
+        .append('defs')
+        .selectAll('marker')
+        .data(arrowColors)
+        .enter()
+        .append('marker')
         .attr({
-            'id': 'arrowhead',
+            'id': function (d) { return 'marker_' + d.name },
             'viewBox': '-0 -5 10 10',
             'refX': 40,
             'refY': 0,
@@ -165,8 +154,9 @@ var renderGraph = function (graph, maxBetweeness) {
         })
         .append('svg:path')
         .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
-        .attr('fill', '#ccc')
-        .attr('stroke', '#ccc');
+        .attr('stroke', function (d, i) { return d.color })
+        .attr('fill', function (d, i) { return d.color })
+
 
     // force feed algo ticks
     force.on("tick", function () {
