@@ -1,20 +1,37 @@
 var svg
 var renderGraph = function (graph, maxBetweeness) {
-    var width = 800, height = 800;
+    var width = 800, height = 800; radius = 25;
 
-    graph.nodes.forEach(n => {
-        n.x = width/2   
-        n.y = height/2
-        n.vx = 1
-        n.vy = 0
-      })
+    // graph.nodes.forEach(n => {
+    //     n.x = width/2   
+    //     n.y = height/2
+    //     n.vx = 1
+    //     n.vy = 0
+    //   })
+
+    // graph.nodes.forEach(n => {
+    //     if (n.mx) {
+    //         n.fixed = true
+    //     } else {
+    //         n.mx = n.cx
+    //         n.my = n.cy
+    //     }
+    // })
+
+    // var force = d3.layout.force()
+    //      .charge(-0.9)
+    //      .linkDistance(200)
+    //      .friction(0.5)
+    //      .gravity(0)
+    //      .alpha(1)
+    //     .size([width, height]);
+
+    var color = d3.scale.category20();
 
     var force = d3.layout.force()
-         .charge(-50)
-         .linkDistance(200)
-         .friction(0.5)
-         .gravity(0.1)
-         .alpha(-0.5)
+        .charge(-100)
+        .linkDistance(200)
+        .gravity(0)
         .size([width, height]);
 
     if (!svg) {
@@ -37,7 +54,10 @@ var renderGraph = function (graph, maxBetweeness) {
         .append("line")
         .attr("id", function (d, i) { return 'edge' + i })
         .attr('marker-end', 'url(#arrowhead)')
-        .style("stroke", "#ccc")
+        .style("stroke-width", '1.5px')   
+        .style('stroke', '#ccc')
+
+
         .style("pointer-events", "none");
 
     var edgepaths = svg.selectAll(".edgepath")
@@ -63,9 +83,9 @@ var renderGraph = function (graph, maxBetweeness) {
         .attr({
             'class': 'edgelabel',
             'id': function (d, i) { return 'edgelabel' + i },
-            'dx': 80,
-            'dy': 0,
-            'font-size': 10,
+            'dx': 90,
+            'dy': 11,
+            'font-size': 12,
             'fill': function (d, i) {
                 return maxBetweeness && d.id == maxBetweeness.key ? 'red' : '#aaa'
             }
@@ -84,14 +104,27 @@ var renderGraph = function (graph, maxBetweeness) {
     var node = svg.selectAll(".node")
         .data(graph.nodes).enter()
         .append("circle")
-        .attr("fill", "green")
-        .attr("stroke", "green")
+        .attr("fill", "rgb(104, 189, 246)")
+        .attr("stroke", "rgb(92, 168, 219)")
         .attr("class", d => {
             return "node " + d.label
         })
-        .attr("r", 15)
+        .attr("r", radius)
         .call(force.drag);
 
+
+    var nodelabels = svg.selectAll(".nodelabel")
+        .data(graph.nodes)
+        .enter()
+        .append("text")
+        .attr({
+            "x": function (d) { return d.x - 14; },
+            "y": function (d) { return d.y - 200; },
+            "class": "nodelabel",
+            "stroke": "white",
+            "fill": "white"
+        })
+        .text(function (d) { return d.title; });
     // html title attribute
     node.append("title")
         .text(d => {
@@ -102,12 +135,12 @@ var renderGraph = function (graph, maxBetweeness) {
         .attr({
             'id': 'arrowhead',
             'viewBox': '-0 -5 10 10',
-            'refX': 25,
+            'refX': 40,
             'refY': 0,
             //'markerUnits':'strokeWidth',
             'orient': 'auto',
-            'markerWidth': 10,
-            'markerHeight': 10,
+            'markerWidth': 6,
+            'markerHeight': 6  ,
             'xoverflow': 'visible'
         })
         .append('svg:path')
@@ -125,16 +158,18 @@ var renderGraph = function (graph, maxBetweeness) {
             "y2": function (d) { return d.target.y; }
         });
 
-        node.attr({
-            "x": function (d) { return width*2; },
-            "y": function (d) { return height*2; },
-            "cx": function (d) { return d.x; },
-            "cy": function (d) { return d.y; }
-
-        });
+       
 
 
+        node
+            .attr("cx", function (d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
+            .attr("cy", function (d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
 
+
+
+        nodelabels
+            .attr("x", function (d) { return d.x - 5; })
+            .attr("y", function (d) { return d.y + 5; });
 
         edgepaths.attr('d', function (d) {
             var path = 'M ' + d.source.x + ' ' + d.source.y + ' L ' + d.target.x + ' ' + d.target.y;

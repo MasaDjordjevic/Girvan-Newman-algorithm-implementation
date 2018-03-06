@@ -2,11 +2,14 @@ require('file?name=[name].[ext]!../node_modules/neo4j-driver/lib/browser/neo4j-w
 var drawing = require('./drawing.js')
 
 window.addEventListener('DOMContentLoaded', function () {
-  clearGraph().then(
-    createGraph().then(
+  //generateGraphQuery(20, 20);
+  clearGraph().then(_ => {
+    createGraph().then(_ => {
       refresh()
-    )
-  )
+    })
+  })
+
+
 
 
   document.getElementById("delete").addEventListener('click', deleteEdge)
@@ -68,7 +71,7 @@ var shortestPaths = function (queryString) {
     .then(result => {
       session.close();
       sp = []
-      betweeness =  {}
+      betweeness = {}
       return result.records.map(record => {
         var res = {};
         res.from = (record._fields[0].properties.name);
@@ -95,7 +98,7 @@ var shortestPaths = function (queryString) {
 }
 
 
-var groupPaths = function () {
+var groupPaths = () => {
   sp = _.groupBy(sp, function (b) {
     return b.from + " " + b.to
   });
@@ -108,7 +111,7 @@ var print = function () {
     if (sp.hasOwnProperty(key)) {
       console.log(key)
       sp[key].forEach(p => {
-        //console.log(p.path.nodes.map(n => n))
+        console.log(p.path.nodes.map(n => n))
         console.log(p.path.edges.map(n => n))
       });
     }
@@ -175,10 +178,6 @@ var drawGraph = function () {
     .then(graph => {
       graph = neo4jDataToD3Data(graph)
       var maxBetweeness = getMaxBetweeness()
-      graph.nodes.forEach(n => {
-        n.x = 0
-        n.y = 0
-      })
       drawing.renderGraph(graph, maxBetweeness)
     })
 }
@@ -207,23 +206,57 @@ var deleteEdge = function () {
 
 }
 
+var generateGraphQuery = function (numNodes, numEdges) {
+  const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+  var nodes = []
+  var edges = []
+  var ret = "CREATE ";
+  Array.apply(null, Array(numNodes)).forEach(function (_, i) {
+    const text = letters[i].toUpperCase() + (i > 26 ? i - 26 : '')
+    ret += "(" + text + ":Loc{name:'" + text + "'}),"
+    nodes.push(text)
+    return
+  });
+  if (numEdges == 0) {
+    ret = ret.substring(0, ret.length - 1); // remove last , 
+  }
+
+  Array.apply(null, Array(numEdges)).forEach(function (_, i) {
+    const firstNode = nodes[Math.floor(Math.random() * numNodes)]
+    var secondNode
+    do {
+      secondNode = nodes[Math.floor(Math.random() * numNodes)]
+    }
+    while (secondNode == firstNode)
+    ret += "(" + firstNode + ")-[:ROAD]->(" + secondNode + ")"
+    ret += i == numEdges - 1 ? ";" : ","
+    return
+  });
+
+
+  //console.log(ret)
+  return ret
+}
+
+var defaultGraph = `CREATE (a:Loc{name:'A'}), (b:Loc{name:'B'}), (c:Loc{name:'C'}),
+(d:Loc{name:'D'}), (e:Loc{name:'E'}), (f:Loc{name:'F'}),
+(a)-[:ROAD]->(b),
+(a)-[:ROAD]->(c),
+(a)-[:ROAD]->(d),
+(a)-[:ROAD]->(d),
+(b)-[:ROAD]->(d),
+(c)-[:ROAD]->(d),
+(c)-[:ROAD]->(e),
+(d)-[:ROAD]->(e),
+(d)-[:ROAD]->(f),
+(e)-[:ROAD]->(f),
+(e)-[:ROAD]->(f);`
+
 var createGraph = function () {
   var session = driver.session();
   return session
     .run(
-      `CREATE (a:Loc{name:'A'}), (b:Loc{name:'B'}), (c:Loc{name:'C'}),
-      (d:Loc{name:'D'}), (e:Loc{name:'E'}), (f:Loc{name:'F'}),
-      (a)-[:ROAD]->(b),
-      (a)-[:ROAD]->(c),
-      (a)-[:ROAD]->(d),
-      (a)-[:ROAD]->(d),
-      (b)-[:ROAD]->(d),
-      (c)-[:ROAD]->(d),
-      (c)-[:ROAD]->(e),
-      (d)-[:ROAD]->(e),
-      (d)-[:ROAD]->(f),
-      (e)-[:ROAD]->(f),
-      (e)-[:ROAD]->(f);`
+      generateGraphQuery(20, 20)
     )
     .then(result => {
       session.close();
