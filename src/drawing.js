@@ -1,4 +1,16 @@
 var svg
+var positions = {}
+
+var clearGraph = function (graph) {
+    if (graph && graph.nodes) {
+        graph.nodes.forEach(n => {
+            positions[n.title] = {}
+            positions[n.title].x = n.x
+            positions[n.title].y = n.y
+        })
+    }
+}
+
 var renderGraph = function (graph, maxBetweeness) {
     var width = 800, height = 800; radius = 25;
 
@@ -38,9 +50,17 @@ var renderGraph = function (graph, maxBetweeness) {
         svg = d3.select("#graph").append("svg")
             .attr("width", "100%").attr("height", "100%")
             .attr("pointer-events", "all");
+
+
     }
     else {
         d3.selectAll("svg > *").remove();
+        graph.nodes.forEach(n => {
+            console.log(positions[n.title])
+            n.x = positions[n.title].x
+            n.y = positions[n.title].y
+            //n.fixed = true;
+        })
     }
 
 
@@ -54,7 +74,7 @@ var renderGraph = function (graph, maxBetweeness) {
         .append("line")
         .attr("id", function (d, i) { return 'edge' + i })
         .attr('marker-end', 'url(#arrowhead)')
-        .style("stroke-width", '1.5px')   
+        .style("stroke-width", '1.5px')
         .style('stroke', '#ccc')
 
 
@@ -140,7 +160,7 @@ var renderGraph = function (graph, maxBetweeness) {
             //'markerUnits':'strokeWidth',
             'orient': 'auto',
             'markerWidth': 6,
-            'markerHeight': 6  ,
+            'markerHeight': 6,
             'xoverflow': 'visible'
         })
         .append('svg:path')
@@ -158,7 +178,7 @@ var renderGraph = function (graph, maxBetweeness) {
             "y2": function (d) { return d.target.y; }
         });
 
-       
+
 
 
         node
@@ -193,4 +213,5 @@ var renderGraph = function (graph, maxBetweeness) {
 
 }
 
+exports.clearGraph = clearGraph;
 exports.renderGraph = renderGraph

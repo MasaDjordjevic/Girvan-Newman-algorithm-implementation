@@ -172,12 +172,16 @@ var neo4jDataToD3Data = function (data) {
   return graph;
 }
 
-
+var graphGlobal
 var drawGraph = function () {
   search()
     .then(graph => {
       graph = neo4jDataToD3Data(graph)
       var maxBetweeness = getMaxBetweeness()
+      if (graphGlobal) {
+        drawing.clearGraph(graphGlobal)
+      }
+      graphGlobal = graph
       drawing.renderGraph(graph, maxBetweeness)
     })
 }
