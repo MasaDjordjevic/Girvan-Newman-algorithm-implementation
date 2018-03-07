@@ -4,21 +4,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="http://neo4j-contrib.github.io/developer-resources/language-guides/assets/css/main.css">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:100|Open+Sans:300" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:200" rel="stylesheet">
     <title>Girvan-Newman algorithm</title>
 </head>
 
 <body>
-
-    <button class="btn btn-danger delete" type="submit" id="delete">Delete</button>
-
+    <div class="options">
+        <div class="form-group">
+            <button class="btn btn-danger delete" type="button" id="delete">Delete</button>
+            <button class="btn undirected" type="button" id="undirected">Undirected</button>
+            <button class="btn refresh" type="button" id="refresh">Refresh</button>
+        </div>
+        <form role="generate" class="navbar-form" id="form">
+            <div class="form-group inputs">
+                <input type="number" value="20" placeholder="Number of nodes" class="form-control" name="nodesno">
+                <input type="number" value="20" placeholder="Number of edges" class="form-control" name="edgesno">
+            </div>
+            <button class="btn btn-warning generate" type="submit" id="generate">Generate new</button>
+        </form>
+    </div>
     <div id="graph">
     </div>
 
 
     <style type="text/css">
-        .node {
-            stroke: #096819;
-            stroke-width: 1.5px;
+
+        .options {
+            background-color: white;
+            display: flex;
+            padding: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            /* font-size: 18px;
+            position: fixed;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            overflow: hidden; */
+        }
+        .options > * {
+            margin-bottom: 0
+        }
+
+        .inputs {
+            margin-top: -2px
+        }
+
+        .navbar-form {
+            margin-top: 0
+        }
+
+        #graph {
+            height: inherit;
+        }
+
+        #form input {
+            width: 60px
         }
 
         .link {
@@ -26,19 +66,22 @@
             stroke-opacity: .6;
             stroke-width: 4px;
         }
-        .nodelabel{
+
+        .nodelabel {
             font-weight: 100;
             font-size: 15;
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Source Code Pro', monospace;
         }
+
         .edgelabel {
             font-family: sans-serif;
         }
+
         #graph {
             position: inherit;
         }
 
-        .delete {
+        .options button {
             margin: 5px
         }
     </style>

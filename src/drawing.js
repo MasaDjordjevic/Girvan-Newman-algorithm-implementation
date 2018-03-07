@@ -17,18 +17,19 @@ var clearGraph = function (graph) {
 
 var renderGraph = function (graph, maxBetweeness) {
     var width = 800, height = 800; radius = 25;
+    var linkDistance = 150;
 
     var color = d3.scale.category20();
 
     var force = d3.layout.force()
         .charge(-100)
-        .linkDistance(200)
+        .linkDistance(linkDistance)
         .gravity(0)
         .size([width, height]);
 
     if (!svg) {
         svg = d3.select("#graph").append("svg")
-            .attr("width", "100%").attr("height", "100%")
+            .attr("width", "100%").attr("height", "90%")
             .attr("pointer-events", "all");
 
 
@@ -83,7 +84,7 @@ var renderGraph = function (graph, maxBetweeness) {
         .attr({
             'class': 'edgelabel',
             'id': function (d, i) { return 'edgelabel' + i },
-            'dx': 90,
+            'dx': 90/200*linkDistance,
             'dy': 11,
             'font-size': 12,
             "user-serlect": "none",
@@ -102,12 +103,12 @@ var renderGraph = function (graph, maxBetweeness) {
     var node = svg.selectAll(".node")
         .data(graph.nodes)
 
-
     var node = svg.selectAll(".node")
         .data(graph.nodes).enter()
         .append("circle")
-        .attr("fill", "rgb(104, 189, 246)")
-        .attr("stroke", "rgb(92, 168, 219)")
+        .attr("fill", "#68BDF6")
+        .attr("stroke", "#5CA8DB")
+        .attr("stroke-width", "2px")
         .attr("class", d => {
             return "node " + d.label
         })
@@ -172,18 +173,17 @@ var renderGraph = function (graph, maxBetweeness) {
 
 
         node
-            .attr("cx", function (d) { return d.x = Math.max(radius, Math.min(width - radius, d.x)); })
-            .attr("cy", function (d) { return d.y = Math.max(radius, Math.min(height - radius, d.y)); });
+            .attr("cx", function (d) { return d.x = Math.max(radius + 3, Math.min(width - radius, d.x)); })
+            .attr("cy", function (d) { return d.y = Math.max(radius + 3, Math.min(height - radius, d.y)); });
 
 
 
         nodelabels
-            .attr("x", function (d) { return d.x - 5; })
-            .attr("y", function (d) { return d.y + 5; });
+            .attr("x", function (d) { return d.x - 4; })
+            .attr("y", function (d) { return d.y + 4; });
 
         edgepaths.attr('d', function (d) {
             var path = 'M ' + d.source.x + ' ' + d.source.y + ' L ' + d.target.x + ' ' + d.target.y;
-            //console.log(d)
             return path
         });
 
