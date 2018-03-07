@@ -5,6 +5,11 @@ var colors = {
     'red': 'darkorange'
 }
 
+var handleMouseoverLink = function (link) {
+    const text = link.betweeness + " = " + link.elaboration
+    document.getElementById("elaboration").innerHTML = text
+}
+
 var clearGraph = function (graph, clearPositions = false) {
     if (clearPositions) {
         positions = {}
@@ -38,7 +43,7 @@ var renderGraph = function (graph, maxBetweeness) {
     }
     else {
         d3.selectAll("svg > *").remove();
-        if (positions[graph.nodes[0]]) {
+        if (positions[graph.nodes[0].title]) {
             graph.nodes.forEach(n => {
                 n.x = positions[n.title].x
                 n.y = positions[n.title].y
@@ -55,6 +60,7 @@ var renderGraph = function (graph, maxBetweeness) {
         .data(graph.links)
         .enter()
         .append("line")
+        .on("mouseover", handleMouseoverLink)
         .attr("id", function (d, i) { return 'edge' + i })
         .attr("marker-end", function (d, i) {
             return 'url(#marker_' + (maxBetweeness && d.id == maxBetweeness.key ? colors.red : 'gray') + ')'
@@ -63,7 +69,7 @@ var renderGraph = function (graph, maxBetweeness) {
         .style('stroke', function (d, i) {
             return maxBetweeness && d.id == maxBetweeness.key ? colors.red : '#ccc'
         })
-        .style("pointer-events", "none");
+    //.style("pointer-events", "none");
 
     var edgepaths = svg.selectAll(".edgepath")
         .data(graph.links)

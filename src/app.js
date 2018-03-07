@@ -5,6 +5,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
   handleGenerate()
 
+
   document.getElementById("delete").addEventListener('click', deleteEdge)
 
   document.getElementById("undirected").addEventListener('click', handleUndirected)
@@ -12,20 +13,27 @@ window.addEventListener('DOMContentLoaded', function () {
   document.getElementById("generate").addEventListener('click', handleGenerate)
 
 
-
-
+  document.getElementById("elaboration").addEventListener('DOMSubtreeModified', function () {
+    var span =  document.getElementById("elaboration")
+    span.style.color = "tomato"
+    setTimeout(function(){ 
+      span.style.color = "gray"
+     }, 1000);   
+  })
 }, false);
 
 var sp = []
 var betweeness = {}
+var elaboration = {}
 var refresh = function (fresh = false) {
   return shortestPaths().then(_ => {
     groupPaths();
     //print();
     calculateBetweenes();
-    drawGraph(fresh);
+    drawGraph(fresh)
   })
 }
+
 
 
 var neo4j = window.neo4j.v1;
@@ -84,6 +92,7 @@ var shortestPaths = function (queryString) {
         sp.push(res)
 
         res.path.edges.forEach(edge => betweeness[edge] = 0)
+        res.path.edges.forEach(edge => elaboration[edge] = '')
         return record;
       });
 
@@ -118,19 +127,29 @@ var print = function () {
   }
 }
 
+
 var calculateBetweenes = function () {
   for (var key in sp) {
     if (sp.hasOwnProperty(key)) {
       sp[key].forEach(p => {
         p.path.edges.forEach(edge => {
           betweeness[edge] += 1 / sp[key].length
+          elaboration[edge] += (1 / sp[key].length).toString() + "(" + p.from + ":" + p.to + ") + "
           //console.log(betweeness)
         });
 
       });
     }
   }
-  //console.log(betweeness)
+
+  //remove last + from elaboration
+  for (var key in elaboration) {
+    if (elaboration.hasOwnProperty(key)) {
+      elaboration[key] = elaboration[key].substring(0, elaboration[key].length - 2)
+    }
+  }
+
+  //console.log(elaboration)
 }
 
 var getMaxBetweeness = function () {
@@ -162,6 +181,7 @@ var neo4jDataToD3Data = function (data) {
       target: _.find(graph.nodes, o => o.title == end.properties.name),
       id: link.id.low,
       betweeness: betweeness[link.id.low],
+      elaboration: elaboration[link.id.low],
       label: "link"
     })
   })
@@ -174,7 +194,7 @@ var neo4jDataToD3Data = function (data) {
 
 var graphGlobal
 var drawGraph = function (fresh = false) {
-  search()
+  return search()
     .then(graph => {
       graph = neo4jDataToD3Data(graph)
       var maxBetweeness = getMaxBetweeness()
@@ -294,24 +314,25 @@ var clearGraph = function () {
 }
 
 
-var handleUndirected = function() {
-  var current = document.getElementById("undirected").innerHTML 
-  document.getElementById("undirected").innerHTML = current == "Undirected" ? "Directed" : "Undirected"  
+var handleUndirected = function () {
+  var current = document.getElementById("undirected").innerHTML
+  document.getElementById("undirected").innerHTML = current == "Undirected" ? "Directed" : "Undirected"
 }
 
-var handleRefresh = function() {
+var handleRefresh = function () {
 
   refresh(true)
 }
 
-var handleGenerate = function(e) {
-  if (e) {e.preventDefault()}
+var handleGenerate = function (e) {
+  if (e) { e.preventDefault() }
   nodesNo = parseInt(document.querySelector("#form input[name='nodesno']").value)
   edgesNo = parseInt(document.querySelector("#form input[name='edgesno']").value)
 
-  clearGraph().then(_ => {
+  return clearGraph().then(_ => {
     createGraph(nodesNo, edgesNo).then(_ => {
       refresh()
     })
   })
 }
+
