@@ -30,6 +30,7 @@ var undirected = false;
 
 
 var refresh = function (fresh = false) {
+  document.getElementById("delete").disabled = false
   return shortestPaths().then(_ => {
     groupPaths();
     //print();
@@ -40,26 +41,28 @@ var refresh = function (fresh = false) {
 
 
 var shortestPaths = function (queryString) {
-  return api.shortestPaths()
-    .then(result => {
-      sp = []
-      betweeness = {}
-      return result.records.map(record => {
-        var res = {};
-        res.from = (record._fields[0].properties.name);
-        res.to = (record._fields[1].properties.name);
-        res.path = {}
-        res.path.nodes = (record._fields[2].trim().split(" "))
-        res.path.edges = (record._fields[3].trim().split(" "))
-        //console.log(res)
+  return new Promise((resolve, reject) => {
+    api.shortestPaths(undirected)
+      .then(result => {
+        sp = []
+        betweeness = {}
+        resolve(result.records.map(record => {
+          var res = {};
+          res.from = (record._fields[0].properties.name);
+          res.to = (record._fields[1].properties.name);
+          res.path = {}
+          res.path.nodes = (record._fields[2].trim().split(" "))
+          res.path.edges = (record._fields[3].trim().split(" "))
+          //console.log(res)
 
-        sp.push(res)
+          sp.push(res)
 
-        res.path.edges.forEach(edge => betweeness[edge] = 0)
-        res.path.edges.forEach(edge => elaboration[edge] = '')
-        return record;
-      });
-    })
+          res.path.edges.forEach(edge => betweeness[edge] = 0)
+          res.path.edges.forEach(edge => elaboration[edge] = '')
+         
+        }))
+      })
+  })
 }
 
 
@@ -114,7 +117,13 @@ var getMaxBetweeness = function () {
   return max
 }
 
+var disableDeleteButton = function(graph) {
+  console.log(graph.links.length)
+  if(graph.links.length == 0) {
+    document.getElementById("delete").disabled = true
 
+  }
+}
 
 
 var graphGlobal
@@ -123,12 +132,14 @@ var drawGraph = function (fresh = false) {
     .then(graph => {
       graph = data.neo4jDataToD3Data(graph, betweeness, elaboration)
       graph.undirected = undirected
+
       var maxBetweeness = getMaxBetweeness()
       if (graphGlobal) {
         drawing.clearGraph(graphGlobal, fresh)
       }
       graphGlobal = graph
       drawing.renderGraph(graph, maxBetweeness)
+      disableDeleteButton(graph)
     })
 }
 
@@ -139,8 +150,6 @@ var deleteEdge = function () {
       refresh()
       return result;
     })
-
-
 }
 
 

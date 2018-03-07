@@ -26,7 +26,7 @@ var clearGraph = function (graph, clearPositions = false) {
 
 var renderGraph = function (graph, maxBetweeness) {
     var width = 800, height = 800; radius = 25;
-    var linkDistance = 150/20*graph.nodes.length;
+    var linkDistance = 150;
 
     var color = d3.scale.category20();
 

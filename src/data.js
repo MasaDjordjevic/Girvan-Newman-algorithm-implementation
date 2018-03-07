@@ -9,33 +9,38 @@ var generateGraphQuery = function (numNodes, numEdges) {
       nodes.push(text)
       return
     });
-    if (numEdges == 0) {
-      ret = ret.substring(0, ret.length - 1); // remove last , 
-    }
+  
   
     var edges = []
     function checkDuplicates(firstNode, secondNode) {
-      return _.findIndex(edges, function (e) {
-        return (e.from == fistNode && e.to == secondNode) || (e.to == fistNode && e.from == secondNode)
+      return -1 != _.findIndex(edges, function (e) {
+        return (e.from == firstNode && e.to == secondNode) || (e.to == firstNode && e.from == secondNode)
       });
     }
   
     Array.apply(null, Array(numEdges)).forEach(function (_, i) {
-      const firstNode = fistNode = nodes[Math.floor(Math.random() * numNodes)]
+      var rand = Math.floor(Math.random() * numNodes)
+      const firstNode = nodes[rand]
       var secondNode
       var limit = 0
       do {
-        secondNode = nodes[Math.floor(Math.random() * numNodes)]
+        rand = Math.floor(Math.random() * numNodes)
+        secondNode = nodes[rand]
         limit++
       }
-      while (limit < 100 && (secondNode == firstNode || checkDuplicates))
+      while (limit < 100 && (secondNode == firstNode || checkDuplicates(firstNode, secondNode)))
+      if (secondNode == firstNode || checkDuplicates(firstNode, secondNode)) {
+          return;
+      }
       edges.push({ from: firstNode, to: secondNode })
       ret += "(" + firstNode + ")-[:ROAD]->(" + secondNode + ")"
       ret += i == numEdges - 1 ? ";" : ","
       return
     });
   
-  
+    if (ret[ret.length -1]== ',') {
+        ret = ret.substring(0, ret.length - 1); // remove last , 
+      }
     //console.log(ret)
     return ret
   }
@@ -60,14 +65,17 @@ var neo4jDataToD3Data = function (data, betweeness, elaboration) {
       links: []
     };
   
-    //console.log("-----")
-    var nodes = data.records[0]._fields[0].nodes
-    var links = data.records[0]._fields[0].links
+    // //console.log("-----")
+    // var nodes = data.records[0]._fields[0].nodes
+    // var links = data.records[0]._fields[0].links
+    var nodes = data.nodes
+    var links = data.links
+
     //console.log(links)
-    nodes.forEach(node => {
+    nodes && nodes.forEach(node => {
       graph.nodes.push({ title: node.properties.name, label: "Loc" })
     })
-    links.forEach(link => {
+    links && links.forEach(link => {
       var start = _.find(nodes, o => o.identity.low == link.source.low)
       var end = _.find(nodes, o => o.identity.low == link.target.low)
       //console.log(start, end)
