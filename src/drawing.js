@@ -5,14 +5,18 @@ var colors = {
     'red': 'darkorange'
 }
 
-var clearGraph = function (graph) {
-    if (graph && graph.nodes) {
+var clearGraph = function (graph, clearPositions = false) {
+    if (clearPositions) {
+        positions = {}
+    } else if (graph && graph.nodes) {
         graph.nodes.forEach(n => {
             positions[n.title] = {}
             positions[n.title].x = n.x
             positions[n.title].y = n.y
         })
+        d3.selectAll("svg > *").remove();
     }
+
 }
 
 var renderGraph = function (graph, maxBetweeness) {
@@ -31,15 +35,15 @@ var renderGraph = function (graph, maxBetweeness) {
         svg = d3.select("#graph").append("svg")
             .attr("width", "100%").attr("height", "90%")
             .attr("pointer-events", "all");
-
-
     }
     else {
         d3.selectAll("svg > *").remove();
-        graph.nodes.forEach(n => {
-            n.x = positions[n.title].x
-            n.y = positions[n.title].y
-        })
+        if (positions[graph.nodes[0]]) {
+            graph.nodes.forEach(n => {
+                n.x = positions[n.title].x
+                n.y = positions[n.title].y
+            })
+        }
     }
 
 
@@ -84,7 +88,7 @@ var renderGraph = function (graph, maxBetweeness) {
         .attr({
             'class': 'edgelabel',
             'id': function (d, i) { return 'edgelabel' + i },
-            'dx': 90/200*linkDistance,
+            'dx': 90 / 200 * linkDistance,
             'dy': 11,
             'font-size': 12,
             "user-serlect": "none",
@@ -135,7 +139,7 @@ var renderGraph = function (graph, maxBetweeness) {
             return d.title;
         });
 
-    var arrowColors = [{name: colors.red, color: colors.red }, {name:"gray", color: "#ccc" }]
+    var arrowColors = [{ name: colors.red, color: colors.red }, { name: "gray", color: "#ccc" }]
     svg
         .append('defs')
         .selectAll('marker')

@@ -2,29 +2,28 @@ require('file?name=[name].[ext]!../node_modules/neo4j-driver/lib/browser/neo4j-w
 var drawing = require('./drawing.js')
 
 window.addEventListener('DOMContentLoaded', function () {
-  //generateGraphQuery(20, 20);
-  clearGraph().then(_ => {
-    createGraph().then(_ => {
-      refresh()
-    })
-  })
 
-
-
+  handleGenerate()
 
   document.getElementById("delete").addEventListener('click', deleteEdge)
+
+  document.getElementById("undirected").addEventListener('click', handleUndirected)
+  document.getElementById("refresh").addEventListener('click', handleRefresh)
+  document.getElementById("generate").addEventListener('click', handleGenerate)
+
+
 
 
 }, false);
 
 var sp = []
 var betweeness = {}
-var refresh = function () {
+var refresh = function (fresh = false) {
   return shortestPaths().then(_ => {
     groupPaths();
     //print();
     calculateBetweenes();
-    drawGraph();
+    drawGraph(fresh);
   })
 }
 
@@ -32,6 +31,7 @@ var refresh = function () {
 var neo4j = window.neo4j.v1;
 var driver = neo4j.driver("bolt://localhost", neo4j.auth.basic("neo4j", "matneomat"));
 var _ = require('lodash');
+
 
 function search() {
   var session = driver.session();
@@ -173,13 +173,13 @@ var neo4jDataToD3Data = function (data) {
 }
 
 var graphGlobal
-var drawGraph = function () {
+var drawGraph = function (fresh = false) {
   search()
     .then(graph => {
       graph = neo4jDataToD3Data(graph)
       var maxBetweeness = getMaxBetweeness()
       if (graphGlobal) {
-        drawing.clearGraph(graphGlobal)
+        drawing.clearGraph(graphGlobal, fresh)
       }
       graphGlobal = graph
       drawing.renderGraph(graph, maxBetweeness)
@@ -256,11 +256,11 @@ var defaultGraph = `CREATE (a:Loc{name:'A'}), (b:Loc{name:'B'}), (c:Loc{name:'C'
 (e)-[:ROAD]->(f),
 (e)-[:ROAD]->(f);`
 
-var createGraph = function () {
+var createGraph = function (nodesNo, edgesNo) {
   var session = driver.session();
   return session
     .run(
-      generateGraphQuery(20, 20)
+      generateGraphQuery(nodesNo, edgesNo)
     )
     .then(result => {
       session.close();
@@ -291,4 +291,27 @@ var clearGraph = function () {
       session.close();
       throw error;
     });
+}
+
+
+var handleUndirected = function() {
+  var current = document.getElementById("undirected").innerHTML 
+  document.getElementById("undirected").innerHTML = current == "Undirected" ? "Directed" : "Undirected"  
+}
+
+var handleRefresh = function() {
+
+  refresh(true)
+}
+
+var handleGenerate = function(e) {
+  if (e) {e.preventDefault()}
+  nodesNo = parseInt(document.querySelector("#form input[name='nodesno']").value)
+  edgesNo = parseInt(document.querySelector("#form input[name='edgesno']").value)
+
+  clearGraph().then(_ => {
+    createGraph(nodesNo, edgesNo).then(_ => {
+      refresh()
+    })
+  })
 }
