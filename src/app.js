@@ -14,17 +14,18 @@ window.addEventListener('DOMContentLoaded', function () {
 
 
   document.getElementById("elaboration").addEventListener('DOMSubtreeModified', function () {
-    var span =  document.getElementById("elaboration")
+    var span = document.getElementById("elaboration")
     span.style.color = "tomato"
-    setTimeout(function(){ 
+    setTimeout(function () {
       span.style.color = "gray"
-     }, 1000);   
+    }, 1000);
   })
 }, false);
 
 var sp = []
 var betweeness = {}
 var elaboration = {}
+var undirected = false;
 var refresh = function (fresh = false) {
   return shortestPaths().then(_ => {
     groupPaths();
@@ -71,7 +72,9 @@ var shortestPaths = function (queryString) {
     .run(
       'MATCH (n1:Loc),(n2:Loc) \
 	WHERE n1<>n2 \
-	MATCH p=allShortestPaths((n1:Loc)-[*]->(n2:Loc)) WITH  p, n1, n2, \
+  MATCH p=allShortestPaths((n1:Loc)-[*]-' +
+      (undirected ? '' : '>') +
+      '(n2:Loc)) WITH  p, n1, n2, \
 	reduce(s="",x in nodes(p) | s+" "+x.name) AS path, \
 	reduce(s="",x in relationships(p) | s+" "+ id(x)) AS edges  \
 	ORDER BY LENGTH(p) DESC return n1, n2, path, edges'
@@ -197,6 +200,7 @@ var drawGraph = function (fresh = false) {
   return search()
     .then(graph => {
       graph = neo4jDataToD3Data(graph)
+      graph.undirected = undirected
       var maxBetweeness = getMaxBetweeness()
       if (graphGlobal) {
         drawing.clearGraph(graphGlobal, fresh)
@@ -233,10 +237,9 @@ var deleteEdge = function () {
 var generateGraphQuery = function (numNodes, numEdges) {
   const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
   var nodes = []
-  var edges = []
   var ret = "CREATE ";
   Array.apply(null, Array(numNodes)).forEach(function (_, i) {
-    const text = letters[i].toUpperCase() + (i > 26 ? i - 26 : '')
+    const text = letters[i%26].toUpperCase() + (i > 25 ? i - 25 : '')
     ret += "(" + text + ":Loc{name:'" + text + "'}),"
     nodes.push(text)
     return
@@ -245,13 +248,22 @@ var generateGraphQuery = function (numNodes, numEdges) {
     ret = ret.substring(0, ret.length - 1); // remove last , 
   }
 
+  var edges = []
+  function checkDuplicates(firstNode, secondNode) {
+    return _.findIndex(edges, function (e){
+      return (e.from == fistNode && e.to == secondNode) || (e.to == fistNode && e.from == secondNode)});
+  }
+
   Array.apply(null, Array(numEdges)).forEach(function (_, i) {
-    const firstNode = nodes[Math.floor(Math.random() * numNodes)]
+    const firstNode = fistNode = nodes[Math.floor(Math.random() * numNodes)]
     var secondNode
+    var limit = 0
     do {
       secondNode = nodes[Math.floor(Math.random() * numNodes)]
+      limit++
     }
-    while (secondNode == firstNode)
+    while ( limit < 100 && (secondNode == firstNode || checkDuplicates))
+    edges.push({ from: firstNode, to: secondNode })
     ret += "(" + firstNode + ")-[:ROAD]->(" + secondNode + ")"
     ret += i == numEdges - 1 ? ";" : ","
     return
@@ -315,8 +327,10 @@ var clearGraph = function () {
 
 
 var handleUndirected = function () {
-  var current = document.getElementById("undirected").innerHTML
-  document.getElementById("undirected").innerHTML = current == "Undirected" ? "Directed" : "Undirected"
+  var current = document.getElementById("undirected").innerHTML;
+  document.getElementById("undirected").innerHTML = current == "Undirected" ? "Directed" : "Undirected";
+  undirected = !undirected;
+  refresh()
 }
 
 var handleRefresh = function () {
@@ -331,7 +345,7 @@ var handleGenerate = function (e) {
 
   return clearGraph().then(_ => {
     createGraph(nodesNo, edgesNo).then(_ => {
-      refresh()
+      refresh(true)
     })
   })
 }

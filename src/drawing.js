@@ -26,7 +26,7 @@ var clearGraph = function (graph, clearPositions = false) {
 
 var renderGraph = function (graph, maxBetweeness) {
     var width = 800, height = 800; radius = 25;
-    var linkDistance = 150;
+    var linkDistance = 150/20*graph.nodes.length;
 
     var color = d3.scale.category20();
 
@@ -63,6 +63,7 @@ var renderGraph = function (graph, maxBetweeness) {
         .on("mouseover", handleMouseoverLink)
         .attr("id", function (d, i) { return 'edge' + i })
         .attr("marker-end", function (d, i) {
+            if (graph.undirected) { return ''}
             return 'url(#marker_' + (maxBetweeness && d.id == maxBetweeness.key ? colors.red : 'gray') + ')'
         })
         .style("stroke-width", '1.5px')
@@ -189,7 +190,7 @@ var renderGraph = function (graph, maxBetweeness) {
 
 
         nodelabels
-            .attr("x", function (d) { return d.x - 4; })
+            .attr("x", function (d) { return d.x - 4*d.title.length; })
             .attr("y", function (d) { return d.y + 4; });
 
         edgepaths.attr('d', function (d) {
