@@ -1,6 +1,6 @@
 # Girvan-Newman algorithm
 
-![image of application](./img/GN implementation.jpg)
+![image of application](./img/GNimplementation.jpg)
 
 The applicatoin is based on neo4j example project [Neo4j Movies Example Application - `neo4j-driver` Edition](https://github.com/neo4j-examples/movies-javascript-bolt)
 ## Stack
